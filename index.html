@@ -58,19 +58,22 @@ pre code{background:none;padding:0;font-size:inherit}
 
 
 
-#drift{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:-1}
-@media (prefers-reduced-motion:reduce){#drift{display:none}}
-/* ambient figure: a person whose choices are being read */
-.walker{position:absolute;bottom:8px;left:-160px;width:150px;opacity:.22;pointer-events:none;
-  animation:stroll 70s linear infinite}
-.walker .bob{animation:bob 2.6s ease-in-out infinite}
-.walker .th-a{animation:think 8s ease-in-out infinite}
-.walker .th-b{animation:think 8s ease-in-out infinite;animation-delay:4s;opacity:0}
-@keyframes stroll{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 280px))}}
+
+/* two minds walking: same world, different perspectives */
+.mind{position:fixed;bottom:-6px;width:130px;opacity:.20;pointer-events:none;z-index:-1}
+.mind-a{left:-150px;animation:strollA 85s linear infinite}
+.mind-b{right:-150px;animation:strollB 85s linear infinite}
+.mind .bob{animation:bob 2.6s ease-in-out infinite}
+.mind-b .bob{animation-delay:1.3s}
+.mind .t1{animation:think 9s ease-in-out infinite}
+.mind .t2{animation:think 9s ease-in-out infinite;animation-delay:4.5s;opacity:0}
+@keyframes strollA{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 300px))}}
+@keyframes strollB{from{transform:translateX(0) scaleX(-1)}to{transform:translateX(calc(-100vw - 300px)) scaleX(-1)}}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes think{0%,45%,100%{opacity:0}10%,35%{opacity:1}}
-header{position:relative;overflow:hidden}
-@media (prefers-reduced-motion:reduce){.walker{display:none}}
+@media (prefers-reduced-motion:reduce){.mind{display:none}}
+#drift{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:-1}
+@media (prefers-reduced-motion:reduce){#drift{display:none}}
 
 /* ---------- hero ---------- */
 header.hero{padding:64px 0 40px;text-align:center}
@@ -197,29 +200,12 @@ footer a{color:var(--ink-2)}
 </head>
 <body>
 <canvas id="drift" aria-hidden="true"></canvas>
+<div class="mind mind-a" aria-hidden="true"><svg viewBox="0 0 130 130" width="130" height="130" fill="none" stroke="#11151b" stroke-width="3" stroke-linecap="round"><g class="bob"><circle cx="50" cy="40" r="9"/><path d="M50 49 L50 82"/><path d="M50 58 L34 68 M50 58 L66 66"/><path d="M50 82 L38 106 M50 82 L62 106"/></g><g class="t1"><circle cx="92" cy="26" r="14" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/><rect x="86" y="20" width="12" height="12" rx="1.5" fill="#d64541" stroke="none"/><circle cx="72" cy="42" r="2.5" fill="#8b93a0" stroke="none"/></g><g class="t2"><circle cx="92" cy="26" r="14" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/><polygon points="92,18 99,32 85,32" fill="#d64541" stroke="none"/><circle cx="72" cy="42" r="2.5" fill="#8b93a0" stroke="none"/></g></svg></div>
+<div class="mind mind-b" aria-hidden="true"><svg viewBox="0 0 130 130" width="130" height="130" fill="none" stroke="#11151b" stroke-width="3" stroke-linecap="round"><g class="bob"><circle cx="50" cy="40" r="9"/><path d="M50 49 L50 82"/><path d="M50 58 L34 68 M50 58 L66 66"/><path d="M50 82 L38 106 M50 82 L62 106"/></g><g class="t1"><circle cx="92" cy="26" r="14" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/><circle cx="92" cy="26" r="6.5" fill="#2f9e5f" stroke="none"/><circle cx="72" cy="42" r="2.5" fill="#8b93a0" stroke="none"/></g><g class="t2"><circle cx="92" cy="26" r="14" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/><circle cx="92" cy="26" r="6.5" fill="#3b73c4" stroke="none"/><circle cx="72" cy="42" r="2.5" fill="#8b93a0" stroke="none"/></g></svg></div>
 
 <!-- ============ HERO ============ -->
 <header class="hero">
-<div class="walker" aria-hidden="true">
-  <svg viewBox="0 0 120 120" width="120" height="120" fill="none" stroke="#11151b" stroke-width="3" stroke-linecap="round">
-    <g class="bob">
-      <circle cx="46" cy="34" r="9" fill="none"/>
-      <path d="M46 43 L46 74"/>
-      <path d="M46 52 L30 62 M46 52 L62 60"/>
-      <path d="M46 74 L34 96 M46 74 L58 96"/>
-    </g>
-    <g class="th-a">
-      <circle cx="84" cy="22" r="13" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/>
-      <circle cx="84" cy="22" r="6" fill="#d64541" stroke="none"/>
-      <circle cx="66" cy="36" r="2.4" fill="#8b93a0" stroke="none"/>
-    </g>
-    <g class="th-b">
-      <circle cx="84" cy="22" r="13" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/>
-      <polygon points="84,15 91,29 77,29" fill="#3b73c4" stroke="none"/>
-      <circle cx="66" cy="36" r="2.4" fill="#8b93a0" stroke="none"/>
-    </g>
-  </svg>
-</div>
+
   <div class="wrap">
     <p class="eyebrow">Cognitive Science &amp; Trustworthy AI</p>
     <h1>EpiSelect
@@ -386,7 +372,41 @@ current rule is missing.</code></pre>
 
     <p style="margin-top:16px">Levels 2 and 3 are why this is a matched quartet rather than a list of questions: both
       are visible only as <em>reversals</em> with everything else held fixed.</p>
-  </div>
+  
+    <h3 style="margin-top:34px">The benchmark ladder: three levels of modeling the other person</h3>
+    <p>Level 1: can you model the other person? Level 2: can you model a more complex reasoning
+      strategy and act on it? Level 3: can you know how uncertain your model of the other person is,
+      and act appropriately under that uncertainty?</p>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:14.5px;background:var(--surface);
+      border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow)">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid var(--rule-2)">
+          <th style="padding:12px 14px;white-space:nowrap">Level</th>
+          <th style="padding:12px 14px">Epistemic challenge</th>
+          <th style="padding:12px 14px">Communication challenge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--rule)">
+          <td style="padding:12px 14px;font-weight:650;white-space:nowrap">Level 1:<br>Simple Minds</td>
+          <td style="padding:12px 14px">Infer one of two simple user rules</td>
+          <td style="padding:12px 14px">Use that model to correct or accommodate</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--rule)">
+          <td style="padding:12px 14px;font-weight:650;white-space:nowrap">Level 2:<br>Complex Minds</td>
+          <td style="padding:12px 14px">Openly infer a compositional reasoning rule from diagnostic behavior</td>
+          <td style="padding:12px 14px">Correct, accommodate truthfully, or choose a default policy</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 14px;font-weight:650;white-space:nowrap">Level 3:<br>Uncertain Minds</td>
+          <td style="padding:12px 14px">Represent <strong>multiple plausible models</strong> of how the user reasons and know what remains unresolved</td>
+          <td style="padding:12px 14px">Decide whether to correct, accommodate, communicate robustly, or gather more information</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+</div>
 </section>
 
 <!-- ============ DESIGN ============ -->
