@@ -166,6 +166,24 @@ td.model{font-family:var(--mono);font-size:13px}
 caption{caption-side:bottom;padding:10px 14px;font-size:12.5px;color:var(--ink-3);text-align:left}
 
 figure{margin:0}
+
+/* IG-style panel carousel */
+.carousel{position:relative;margin:18px 0}
+.car-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+  border:1px solid var(--rule);border-radius:10px;background:#fff;box-shadow:var(--shadow);scrollbar-width:none}
+.car-track::-webkit-scrollbar{display:none}
+.car-slide{flex:0 0 100%;scroll-snap-align:center;padding:10px}
+.car-slide img{width:100%;display:block;border:0;box-shadow:none;border-radius:6px}
+.car-btn{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;
+  border:1px solid var(--rule-2);background:#fff;color:var(--ink);font-size:18px;cursor:pointer;
+  box-shadow:var(--shadow);z-index:2;line-height:1}
+.car-btn:hover{background:var(--surface-2)}
+.car-prev{left:10px}.car-next{right:10px}
+.car-dots{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.car-dots button{width:9px;height:9px;border-radius:50%;border:0;background:var(--rule-2);cursor:pointer;padding:0}
+.car-dots button[aria-current="true"]{background:var(--accent)}
+.car-cap{text-align:center;font-size:13.5px;color:var(--ink-2);margin-top:8px}
+
 figure img{width:100%;display:block;border:1px solid var(--rule);border-radius:10px;background:#fff;
   box-shadow:var(--shadow)}
 figcaption{font-size:13px;color:var(--ink-3);margin-top:10px;max-width:72ch}
@@ -521,6 +539,22 @@ python score_predictions.py \
 
     <figure>
       <img src="static/images/results_overview.png" alt="Four-panel results figure: joint success, the two capacities scored separately, role asymmetry, and response bias.">
+    <h3 style="margin-top:36px">All 19 models together &mdash; open-source and frontier, one panel at a time</h3>
+    <div class="carousel" id="car19">
+      <button class="car-btn car-prev" aria-label="Previous panel">&#8249;</button>
+      <div class="car-track" id="car19-track">
+        <div class="car-slide"><img src="static/images/all19_panelA.png" alt="Panel A: joint success for all 19 models, colored by company"></div>
+        <div class="car-slide"><img src="static/images/all19_panelB.png" alt="Panel B: rule inference and action selection scored separately for all 19 models"></div>
+        <div class="car-slide"><img src="static/images/all19_panelC.png" alt="Panel C: teacher versus imposter joint success for all 19 models"></div>
+        <div class="car-slide"><img src="static/images/all19_panelD.png" alt="Panel D: quartet consistency across matched trials for all 19 models"></div>
+      </div>
+      <button class="car-btn car-next" aria-label="Next panel">&#8250;</button>
+      <div class="car-dots" id="car19-dots" role="tablist"></div>
+      <p class="car-cap" id="car19-cap"></p>
+    </div>
+    <p class="note">Open-source models: 3 repetitions; Claude / Gemini / GPT models: one run each. Bars show the mean;
+      error bars show SD where repeated runs exist. Panel colors indicate model company.</p>
+
       <figcaption>A: joint success against 0.19 chance. B: rule inference and evidence selection scored separately.
         C: joint success split by role. D: how often each rule label is reported, against a 50/50 ground truth.</figcaption>
     </figure>
@@ -966,6 +1000,33 @@ Return exactly one JSON object and no other text:
   resize();
   window.addEventListener('resize', resize);
   requestAnimationFrame(draw);
+})();
+</script>
+<script>
+(function(){
+  var track = document.getElementById('car19-track');
+  if(!track) return;
+  var caps = ['A - Joint success (100 main trials)','B - The two capacities, scored separately',
+              'C - Role asymmetry (teacher vs imposter)','D - Quartet consistency across matched trials'];
+  var dots = document.getElementById('car19-dots'), cap = document.getElementById('car19-cap');
+  var n = track.children.length;
+  for(var i=0;i<n;i++){
+    var b = document.createElement('button');
+    b.setAttribute('aria-label','Go to panel '+(i+1));
+    (function(k){ b.addEventListener('click', function(){ go(k); }); })(i);
+    dots.appendChild(b);
+  }
+  function idx(){ return Math.round(track.scrollLeft / track.clientWidth); }
+  function paint(){
+    var k = Math.max(0, Math.min(n-1, idx()));
+    for(var i=0;i<n;i++) dots.children[i].setAttribute('aria-current', i===k ? 'true' : 'false');
+    cap.textContent = caps[k];
+  }
+  function go(k){ track.scrollTo({left: k * track.clientWidth, behavior:'smooth'}); }
+  document.querySelector('#car19 .car-prev').addEventListener('click', function(){ go(idx()-1); });
+  document.querySelector('#car19 .car-next').addEventListener('click', function(){ go(idx()+1); });
+  track.addEventListener('scroll', function(){ requestAnimationFrame(paint); });
+  paint();
 })();
 </script>
 </body>
