@@ -533,13 +533,10 @@ python score_predictions.py \
 <section id="results">
   <div class="wrap">
     <p class="eyebrow">Results &middot; Level 1, text stimuli</p>
-    <h2>Six open-weight models, 120 trials, 3 repetitions</h2>
-    <p>Run through Ollama at temperature 0, <code>max_tokens</code> 4096, seeds 1001&ndash;1003, one stateless call per
-      item. Error bars are SD across repetitions.</p>
+    <h2>Nineteen models &mdash; open-source and frontier</h2>
+    <p>Open-source models: Ollama, temperature 0, 3 repetitions (error bars are SD). Claude, Gemini and GPT
+      models: one stateless API run each at temperature 0 where supported. Same 120 trials, same scorer throughout.</p>
 
-    <figure>
-      <img src="static/images/results_overview.png" alt="Four-panel results figure: joint success, the two capacities scored separately, role asymmetry, and response bias.">
-    <h3 style="margin-top:36px">All 19 models together &mdash; open-source and frontier, one panel at a time</h3>
     <div class="carousel" id="car19">
       <button class="car-btn car-prev" aria-label="Previous panel">&#8249;</button>
       <div class="car-track" id="car19-track">
@@ -555,11 +552,7 @@ python score_predictions.py \
     <p class="note">Open-source models: 3 repetitions; Claude / Gemini / GPT models: one run each. Bars show the mean;
       error bars show SD where repeated runs exist. Panel colors indicate model company.</p>
 
-      <figcaption>A: joint success against 0.19 chance. B: rule inference and evidence selection scored separately.
-        C: joint success split by role. D: how often each rule label is reported, against a 50/50 ground truth.</figcaption>
-    </figure>
-
-    <h3>Reading the figure</h3>
+    <h3>Reading the panels</h3>
     <ul class="tight">
       <li><strong>A &mdash; the floor is real but not trivial.</strong> Five of six clear the chance line without
         approaching ceiling; qwen3:8b is the exception, at ceiling everywhere.</li>
@@ -567,8 +560,9 @@ python score_predictions.py \
         models: they read the learner, then still show the wrong thing.</li>
       <li><strong>C &mdash; goals are asymmetric.</strong> Imposter is passed easily; Teacher collapses to the floor.
         Blending in is cheaper than repairing.</li>
-      <li><strong>D &mdash; some &ldquo;inference&rdquo; is a response bias.</strong> Two models emit one label on
-        nearly every trial, so their chance-level scores in B only look like coin-flipping.</li>
+      <li><strong>D &mdash; consistency is the frontier separator.</strong> Quartet consistency demands all four
+        matched cells of a rule be answered correctly together; open models collapse here even when single-trial
+        scores look respectable, while frontier models hold 1.00.</li>
     </ul>
 
     <h3>What this does and does not claim</h3>
