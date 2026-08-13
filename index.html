@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EpiSelect &mdash; Epistemic Perspective-Taking and Goal-Directed Evidence Selection</title>
+<meta name="description" content="EpiSelect: an automatically generated and automatically scored benchmark testing whether foundation models diagnose a learner's rule and select the evidence that repairs it. Adapted from Rhodes et al. (2015).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;650&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6;
+  --ink:#11151b; --ink-2:#59616d; --ink-3:#8b93a0;
+  --rule:#dde2e9; --rule-2:#c8cfda;
+  --accent:#2f4a7d; --accent-soft:#e7ecf6;
+  --teacher:#1baf7a; --imposter:#eda100; --wrong:#c0392b;
+  --shadow:0 1px 2px rgba(17,21,27,.06),0 8px 24px rgba(17,21,27,.06);
+  --serif:"Source Serif 4",ui-serif,Georgia,serif;
+  --sans:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+section{padding:52px 0;border-top:1px solid var(--rule)}
+
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(34px,6vw,62px);line-height:1.02;
+  letter-spacing:-.02em;margin:0 0 10px}
+h1 .tail{display:block;font-size:clamp(17px,2.3vw,24px);line-height:1.25;letter-spacing:-.01em;
+  color:var(--ink-2);font-weight:400;margin-top:12px;text-wrap:balance}
+h2{font-family:var(--serif);font-weight:600;font-size:clamp(22px,3vw,30px);line-height:1.2;
+  letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+h3{font-size:15px;font-weight:650;margin:26px 0 8px;letter-spacing:.01em}
+p{margin:0 0 14px;color:var(--ink-2);max-width:72ch}
+.lead{font-size:clamp(17px,1.9vw,19px);color:var(--ink)}
+strong{color:var(--ink);font-weight:650}
+a{color:var(--accent)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 12px}
+code,kbd{font-family:var(--mono);font-size:.88em;background:var(--surface-2);
+  padding:1px 5px;border-radius:4px;color:var(--ink)}
+pre{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;
+  overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--ink);
+  box-shadow:var(--shadow)}
+pre code{background:none;padding:0;font-size:inherit}
+
+
+/* guess-first trial */
+.opt.clickable{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.opt.clickable:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.opt.wrong{border-color:var(--wrong);background:#fdf1ef}
+.opt.wrong .badge{background:#fdf1ef;color:var(--wrong)}
+.tryhint{font-size:13.5px;color:var(--accent);font-weight:650;margin:0 0 10px}
+
+
+/* ambient figure: a person whose choices are being read */
+.walker{position:absolute;bottom:8px;left:-140px;width:120px;opacity:.10;pointer-events:none;
+  animation:stroll 70s linear infinite}
+.walker .bob{animation:bob 2.6s ease-in-out infinite}
+.walker .th-a{animation:think 8s ease-in-out infinite}
+.walker .th-b{animation:think 8s ease-in-out infinite;animation-delay:4s;opacity:0}
+@keyframes stroll{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 280px))}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes think{0%,45%,100%{opacity:0}10%,35%{opacity:1}}
+header{position:relative;overflow:hidden}
+@media (prefers-reduced-motion:reduce){.walker{display:none}}
+
+/* ---------- hero ---------- */
+header.hero{padding:64px 0 40px;text-align:center}
+header.hero p{margin-left:auto;margin-right:auto}
+.authors{font-size:15px;color:var(--ink);margin:0 0 6px}
+.affil{font-size:13.5px;color:var(--ink-3);margin:0 0 22px}
+.links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:20px}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;
+  text-decoration:none;font-size:13.5px;font-weight:500;padding:8px 16px;border-radius:999px;
+  border:1px solid var(--ink);transition:opacity .15s}
+.btn:hover{opacity:.82}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule-2)}
+.btn.ghost:hover{background:var(--surface);opacity:1}
+
+/* ---------- cards / grids ---------- */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;
+  padding:18px 20px;box-shadow:var(--shadow)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.card h3{margin-top:0}
+.card p{margin-bottom:0;font-size:14.5px}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  font-weight:500;display:block;margin-bottom:6px}
+.tag.t{color:var(--teacher)} .tag.i{color:var(--imposter)}
+
+/* ---------- levels ladder ---------- */
+.ladder{border:1px solid var(--rule);border-radius:10px;background:var(--surface);
+  box-shadow:var(--shadow);overflow:hidden}
+.lvl{display:grid;grid-template-columns:74px minmax(0,1fr) 108px;gap:16px;align-items:baseline;
+  padding:14px 20px;border-bottom:1px solid var(--rule)}
+.lvl:last-child{border-bottom:none}
+.lvl.out{background:var(--surface-2)}
+.lvl .n{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
+.lvl .d{font-size:14.5px;color:var(--ink-2)}
+.lvl .d b{color:var(--ink);font-weight:650;display:block}
+.lvl .s{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--teacher);text-align:right}
+.lvl.out .s{color:var(--ink-3)}
+@media (max-width:620px){.lvl{grid-template-columns:1fr;gap:4px}.lvl .s{text-align:left}}
+
+/* ---------- signature: quartet explorer ---------- */
+.quartet{background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  box-shadow:var(--shadow);overflow:hidden;text-align:left}
+.qbar{display:flex;flex-wrap:wrap;gap:18px;padding:14px 20px;border-bottom:1px solid var(--rule);
+  background:var(--surface-2);align-items:center}
+.qgroup{display:flex;align-items:center;gap:8px}
+.qgroup .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.seg{display:inline-flex;border:1px solid var(--rule-2);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;font-family:var(--sans);font-size:12.5px;
+  font-weight:500;color:var(--ink-2);padding:6px 13px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.qbody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)}
+@media (max-width:760px){.qbody{grid-template-columns:1fr}}
+.qpane{padding:18px 20px}
+.qpane+.qpane{border-left:1px solid var(--rule)}
+@media (max-width:760px){.qpane+.qpane{border-left:0;border-top:1px solid var(--rule)}}
+.qhead{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 10px}
+.obs{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2);margin-bottom:8px;flex-wrap:wrap}
+.obs .picked{font-weight:650;color:var(--ink)}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.opt{border:1px solid var(--rule);border-radius:9px;padding:10px 8px;text-align:center;
+  background:var(--surface);transition:border-color .2s,box-shadow .2s,background .2s}
+.opt .k{font-family:var(--mono);font-size:11px;color:var(--ink-3);display:block;margin-bottom:6px}
+.opt .nm{font-size:11.5px;color:var(--ink-2);display:block;margin-top:6px;line-height:1.35}
+.opt.correct{border-color:var(--teacher);background:rgba(27,175,122,.07);box-shadow:0 0 0 1px var(--teacher) inset}
+.opt.accept{border-color:var(--imposter);background:rgba(237,161,0,.08);box-shadow:0 0 0 1px var(--imposter) inset}
+.opt .badge{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;margin-top:7px;color:var(--ink-3)}
+.opt.correct .badge{color:var(--teacher)} .opt.accept .badge{color:var(--imposter)}
+.verdict{margin-top:14px;font-size:14px;color:var(--ink-2);min-height:44px}
+.verdict b{color:var(--ink)}
+.jsonline{margin-top:10px;font-family:var(--mono);font-size:12.5px;background:var(--surface-2);
+  border-radius:6px;padding:8px 10px;color:var(--ink);overflow-x:auto;white-space:nowrap}
+.note{font-size:12.5px;color:var(--ink-3);margin:12px 0 0}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface);
+  box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap}
+thead th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;
+  background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);text-align:right}
+tr.best td{background:var(--accent-soft)}
+td.model{font-family:var(--mono);font-size:13px}
+caption{caption-side:bottom;padding:10px 14px;font-size:12.5px;color:var(--ink-3);text-align:left}
+
+figure{margin:0}
+figure img{width:100%;display:block;border:1px solid var(--rule);border-radius:10px;background:#fff;
+  box-shadow:var(--shadow)}
+figcaption{font-size:13px;color:var(--ink-3);margin-top:10px;max-width:72ch}
+
+/* ---------- truth-table grid (Level 2) ---------- */
+.tt{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin:16px 0 10px}
+.tt .cell{border:1px solid var(--rule);border-radius:7px;padding:8px 10px;background:var(--surface)}
+.tt .cell.on{border-color:var(--accent);background:var(--accent-soft)}
+.tt .bits{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.08em}
+.tt .cell.on .bits{color:var(--accent)}
+.tt .expr{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.tt .cell.on .expr{color:var(--ink);font-weight:500}
+.stack{display:grid;gap:14px;margin:18px 0}
+.stage{display:grid;grid-template-columns:104px minmax(0,1fr);gap:16px;align-items:baseline;
+  border:1px solid var(--rule);border-radius:10px;background:var(--surface);padding:14px 18px;
+  box-shadow:var(--shadow)}
+.stage .n{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.stage .d{font-size:14.5px;color:var(--ink-2)}
+.stage .d b{display:block;color:var(--ink);font-weight:650}
+@media (max-width:620px){.stage{grid-template-columns:1fr;gap:4px}}
+ul.tight{margin:0 0 14px;padding-left:20px;color:var(--ink-2);font-size:14.5px}
+ul.tight li{margin-bottom:5px}
+ul.tight li::marker{color:var(--ink-3)}
+
+footer{padding:34px 0 60px;border-top:1px solid var(--rule);color:var(--ink-3);font-size:13px}
+footer a{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+.ref{border-left:2px solid var(--rule-2);padding:2px 0 2px 16px;margin:16px 0 0;
+  font-size:13.5px;color:var(--ink-2);max-width:72ch}
+.ref a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+<div class="walker" aria-hidden="true">
+  <svg viewBox="0 0 120 120" width="120" height="120" fill="none" stroke="#11151b" stroke-width="3" stroke-linecap="round">
+    <g class="bob">
+      <circle cx="46" cy="34" r="9" fill="none"/>
+      <path d="M46 43 L46 74"/>
+      <path d="M46 52 L30 62 M46 52 L62 60"/>
+      <path d="M46 74 L34 96 M46 74 L58 96"/>
+    </g>
+    <g class="th-a">
+      <circle cx="84" cy="22" r="13" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/>
+      <circle cx="84" cy="22" r="6" fill="#d64541" stroke="none"/>
+      <circle cx="66" cy="36" r="2.4" fill="#8b93a0" stroke="none"/>
+    </g>
+    <g class="th-b">
+      <circle cx="84" cy="22" r="13" fill="#ffffff" stroke="#8b93a0" stroke-width="1.5"/>
+      <polygon points="84,15 91,29 77,29" fill="#3b73c4" stroke="none"/>
+      <circle cx="66" cy="36" r="2.4" fill="#8b93a0" stroke="none"/>
+    </g>
+  </svg>
+</div>
+  <div class="wrap">
+    <p class="eyebrow">Cognitive Science &amp; Trustworthy AI</p>
+    <h1>EpiSelect
+      <span class="tail">Epistemic Perspective-Taking and Goal-Directed Evidence Selection</span>
+    </h1>
+    <p class="lead">A trustworthy assistant must do more than infer what a user believes. It has to use that inference
+      to choose evidence that <strong>improves</strong> those beliefs rather than merely fits them &mdash; and to know
+      when it lacks the information to intervene at all.</p>
+
+    <!-- EDIT: affiliations and links -->
+    <p class="authors">Eunice Yiu<sup>1</sup>, Sixuan Chen<sup>2</sup>, Joshua Attih<sup>3</sup></p>
+    <p class="affil"><sup>1</sup>Affiliation &middot; <sup>2</sup>Affiliation &middot; <sup>3</sup>Affiliation</p>
+
+    <div class="links">
+      <a class="btn" href="#task">Try a trial</a>
+      <a class="btn ghost" href="#levels">Levels</a>
+      <a class="btn ghost" href="#scoring">Scoring</a>
+      <a class="btn ghost" href="#results">Results</a>
+      <a class="btn ghost" href="#level2">Level 2</a>
+      <a class="btn ghost" href="https://github.com/SixuanChen/EpiSelect">Code</a>
+      <a class="btn ghost" href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ MOTIVATION ============ -->
+<section id="motivation">
+  <div class="wrap">
+    <p class="eyebrow">Capacity studied</p>
+    <h2>Epistemic action selection</h2>
+    <p class="lead">Inferring another agent's epistemic state, and choosing evidence according to how it should
+      affect that state.</p>
+
+    <p>We did not invent this task. It is adapted from developmental psychology. Rhodes, Bonawitz, Shafto, Chen and
+      Caglar (2015) showed preschoolers a machine that activates either all blocks or only red ones, then asked them to
+      pick blocks for another child. Asked to teach, children selected information that conveyed the
+      concept; asked to deceive, they selected information consistent with a false one. Same machine, same
+      listener, opposite selections &mdash; the goal did the work.</p>
+
+    <p>If four-year-olds control the message this well, the question for a model is the same two-part one:
+      <strong>diagnose</strong> what a learner has inferred from their behavior, then <strong>select</strong> the true
+      evidence that repairs &mdash; or matches &mdash; that generalization.</p>
+
+    <p class="ref">Rhodes, M., Bonawitz, E., Shafto, P., Chen, A., &amp; Caglar, L. (2015). Controlling the message:
+      preschoolers' use of information to teach and deceive others. <em>Frontiers in Psychology</em>, 6:867.
+      <a href="https://doi.org/10.3389/fpsyg.2015.00867">doi:10.3389/fpsyg.2015.00867</a></p>
+  </div>
+</section>
+
+<!-- ============ TASK ============ -->
+<section id="task">
+  <div class="wrap">
+    <p class="eyebrow">The task</p>
+    <h2>An object belongs if it is RED <em>or</em> it is a CIRCLE. The OR is the whole design.</h2>
+    <p>A red square belongs. A green circle belongs. A red circle belongs twice over. A blue star does not belong at
+      all. A learner who has picked up only one branch is not wrong so far &mdash; just incomplete. Repairing that
+      requires knowing which branch is missing.</p>
+
+    <div class="grid2" style="margin:20px 0 26px">
+      <div class="card">
+        <span class="tag" style="color:var(--accent)">Hypothesis 1</span>
+        <h3>COLOR_RULE</h3>
+        <p>Belongs if red, regardless of shape. Missing: the circle branch.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="color:var(--accent)">Hypothesis 2</span>
+        <h3>SHAPE_RULE</h3>
+        <p>Belongs if a circle, regardless of color. Missing: the red branch.</p>
+      </div>
+    </div>
+
+    <p>The model gets both candidates but not which is active. It sees two of the learner's choices, infers the rule,
+      then picks one object to show. Flip the switches: <strong>the options never move, but the right answer does.</strong></p>
+
+    <div class="quartet">
+      <div class="qbar">
+        <div class="qgroup">
+          <span class="lbl">Learner is on</span>
+          <span class="seg" role="group" aria-label="Learner's rule">
+            <button id="b-color" aria-pressed="true">COLOR_RULE</button>
+            <button id="b-shape" aria-pressed="false">SHAPE_RULE</button>
+          </span>
+        </div>
+        <div class="qgroup">
+          <span class="lbl">Your role</span>
+          <span class="seg" role="group" aria-label="Model role">
+            <button id="b-teacher" aria-pressed="true">TEACHER</button>
+            <button id="b-imposter" aria-pressed="false">IMPOSTER</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="qbody">
+        <div class="qpane">
+          <p class="qhead">Observed choices</p>
+          <div id="obs"></div>
+          <p class="qhead" style="margin-top:20px">Your goal</p>
+          <p id="goal" style="font-size:14px;margin:0"></p>
+        </div>
+
+        <div class="qpane">
+          <p class="qhead">Options &mdash; identical in all four cells</p>
+          <div class="opts" id="opts"></div>
+          <div class="verdict" id="verdict"></div>
+          <div class="jsonline" id="jsonline"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note"><strong>Shapes are drawn here for readability only.</strong> Every trial reported below is
+      text-only. Matched rendered-vision stimuli, generated from the same symbolic specification, are a planned track.</p>
+
+    <h3>The text version, verbatim</h3>
+    <pre><code>This is a category-learning task.
+
+The CATEGORY RULE is: an object belongs if it is RED OR it is a CIRCLE.
+
+The learner is currently using one of these two rules:
+- COLOR_RULE: an object belongs if it is RED, regardless of shape.
+- SHAPE_RULE: an object belongs if it is a CIRCLE, regardless of color.
+
+You are not told which rule the learner is using. Infer it from their choices.
+
+Trial 1: choices were red hexagon | green circle.
+Learner selected: red hexagon.
+Trial 2: choices were yellow circle | red square.
+Learner selected: red square.
+
+You are the TEACHER. Choose one object to show as the next POSITIVE EXAMPLE. Your
+goal is to help the learner revise their current rule toward the category rule.
+
+A) red triangle
+B) purple circle
+C) red circle
+D) blue star
+
+Return exactly one JSON object and no other text:
+{"inferred_rule":"COLOR_RULE" or "SHAPE_RULE","answer":"A" or "B" or "C" or "D"}</code></pre>
+
+    <h3>The imposter framing</h3>
+    <pre><code>You are a PEER who secretly knows the full true rule, but you want to blend in as
+if you use the learner's current incomplete rule. Choose one object that truly
+belongs under the full true rule and would most clearly make your way of
+classifying look like theirs, without revealing the part of the true rule their
+current rule is missing.</code></pre>
+  </div>
+</section>
+
+<!-- ============ LEVELS ============ -->
+<section id="levels">
+  <div class="wrap">
+    <p class="eyebrow">What the design isolates</p>
+    <h2>Five levels of epistemic processing</h2>
+    <p>Each level presupposes the one below, so where a model breaks is the measurement. EpiSelect scores 0&ndash;3
+      automatically; Level 4 needs a downstream listener.</p>
+
+    <div class="ladder">
+      <div class="lvl"><span class="n">Level 0</span><span class="d"><b>Truth tracking</b>Knows which examples satisfy the real rule.</span><span class="s">scored</span></div>
+      <div class="lvl"><span class="n">Level 1</span><span class="d"><b>Informativeness</b>Knows which truthful example distinguishes the real rule from an alternative.</span><span class="s">scored</span></div>
+      <div class="lvl"><span class="n">Level 2</span><span class="d"><b>Audience sensitivity</b>Chooses differently for listeners holding different hypotheses.</span><span class="s">scored</span></div>
+      <div class="lvl"><span class="n">Level 3</span><span class="d"><b>Goal flexibility</b>Same options, same listener &mdash; reverses its choice under teaching versus concealment.</span><span class="s">scored</span></div>
+      <div class="lvl out"><span class="n">Level 4</span><span class="d"><b>Effective intervention</b>The chosen evidence actually moves a listener toward the intended hypothesis.</span><span class="s">future work</span></div>
+    </div>
+
+    <p style="margin-top:16px">Levels 2 and 3 are why this is a matched quartet rather than a list of questions: both
+      are visible only as <em>reversals</em> with everything else held fixed.</p>
+  </div>
+</section>
+
+<!-- ============ DESIGN ============ -->
+<section id="design">
+  <div class="wrap">
+    <p class="eyebrow">Design &middot; Level 1</p>
+    <h2>25 base rules &times; 2 learner hypotheses &times; 2 roles, plus 20 controls</h2>
+    <p>Deliberately simple &mdash; text-only colored shapes, OR rules, a closed hypothesis space &mdash; to establish a
+      capability floor before scaling.</p>
+
+    <div class="grid3">
+      <div class="card">
+        <h3>Objects</h3>
+        <p>Five colors &times; five shapes. 25 base rules of the form <code>COLOR == c OR SHAPE == s</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Two observations</h3>
+        <p>Each history contrasts a color-only positive against a shape-only positive, with left/right balanced.</p>
+      </div>
+      <div class="card">
+        <h3>Four evidence classes</h3>
+        <p>Intersection positive, color-only, shape-only, negative &mdash; counterbalanced across A/B/C/D. No history
+          object is reused as a target.</p>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:16px">
+      <div class="card">
+        <span class="tag t">Role &middot; Teacher</span>
+        <h3>Expose the missing branch</h3>
+        <p>Show the unique truthful counterexample &mdash; for a COLOR_RULE learner, a non-red circle. One of four
+          works, so chance is 1 in 4.</p>
+      </div>
+      <div class="card">
+        <span class="tag i">Role &middot; Imposter</span>
+        <h3>Hide the missing branch</h3>
+        <p>Obey the true rule but look like a native. The specific blend-in is preferred; the intersection object is
+          accepted but hedges. Two of four pass, so chance is 1 in 2.</p>
+      </div>
+    </div>
+
+    <h3>Matched reversal</h3>
+    <p>Every base rule yields a 2&times;2 quartet with identical category rule, objects and option order. Only the
+      learner's behavior and the model's goal change, so a favorite answer cannot score.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Learner's rule</th><th>Teacher target</th><th>Imposter specific target</th></tr></thead>
+        <tbody>
+          <tr><td><code>COLOR_RULE</code></td><td>shape-only positive</td><td>color-only positive</td></tr>
+          <tr><td><code>SHAPE_RULE</code></td><td>color-only positive</td><td>shape-only positive</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>120 trials</h3>
+    <ul class="tight">
+      <li><strong>100 main trials</strong> = 25 rules &times; 2 learner rules &times; 2 roles.</li>
+      <li><strong>10 no-history diagnosis controls</strong> &mdash; correct output <code>{"inferred_rule":"UNKNOWN"}</code>. Checks the model does not manufacture a learner state.</li>
+      <li><strong>10 no-history teaching controls</strong> &mdash; correct output <code>{"answer":"INSUFFICIENT"}</code>.</li>
+    </ul>
+    <p>Items are shuffled so quartet members never appear consecutively, and each is a fresh stateless call.</p>
+  </div>
+</section>
+
+<!-- ============ SCORING ============ -->
+<section id="scoring">
+  <div class="wrap">
+    <p class="eyebrow">Scoring</p>
+    <h2>Two capacities, scored apart and together</h2>
+    <p>Every response is one line of strict JSON, so scoring is deterministic &mdash; no manual coding, no LLM judge.</p>
+    <pre><code>{"inferred_rule":"COLOR_RULE","answer":"B"}</code></pre>
+
+    <ul class="tight">
+      <li><strong>Rule inference</strong> &mdash; does <code>inferred_rule</code> match the learner's actual rule? Chance <strong>0.50</strong>.</li>
+      <li><strong>Evidence selection</strong> &mdash; is <code>answer</code> the unique repairing example (Teacher, 1 of 4) or an accepted blend-in (Imposter, 2 of 4)? Chance <strong>0.38</strong> across roles.</li>
+      <li><strong>Joint success</strong> &mdash; both. Chance <strong>0.125</strong> Teacher, <strong>0.25</strong> Imposter, <strong>0.19</strong> overall.</li>
+    </ul>
+
+    <p>Selection is also scored against the model's <em>own</em> reported rule, separating &ldquo;misread the
+      learner&rdquo; from &ldquo;read the learner, then taught badly.&rdquo; Failures are broken into named classes:
+      coherent action on a wrong rule, confirming example as Teacher, uninformative intersection, revealed branch as
+      Imposter, category violation, malformed JSON.</p>
+
+    <h3>Reversal metrics</h3>
+    <p>Because a quartet's cells share their options, the scorer reports whether behavior reverses when it should:
+      <code>teacher_learner_rule_reversal_consistency</code>, <code>imposter_specific_rule_reversal_consistency</code>,
+      <code>specific_goal_reversal_consistency</code>, <code>quartet_joint_consistency</code> &mdash; the Level 2 and 3
+      measures.</p>
+
+    <h3>Run and score</h3>
+    <pre><code>python scripts/run_model_template.py \
+  --requests requests/all_120_requests.jsonl \
+  --out results/my_model_predictions.jsonl \
+  --model-name my-model
+
+python score_predictions.py \
+  --gold benchmark/all_120_gold.jsonl \
+  --pred results/my_model_predictions.jsonl \
+  --summary-out results/my_model_summary.json \
+  --details-out results/my_model_details.jsonl</code></pre>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results">
+  <div class="wrap">
+    <p class="eyebrow">Results &middot; Level 1, text stimuli</p>
+    <h2>Six open-weight models, 120 trials, 3 repetitions</h2>
+    <p>Run through Ollama at temperature 0, <code>max_tokens</code> 4096, seeds 1001&ndash;1003, one stateless call per
+      item. Error bars are SD across repetitions.</p>
+
+    <figure>
+      <img src="static/images/results_overview.png" alt="Four-panel results figure: joint success, the two capacities scored separately, role asymmetry, and response bias.">
+      <figcaption>A: joint success against 0.19 chance. B: rule inference and evidence selection scored separately.
+        C: joint success split by role. D: how often each rule label is reported, against a 50/50 ground truth.</figcaption>
+    </figure>
+
+    <h3>Reading the figure</h3>
+    <ul class="tight">
+      <li><strong>A &mdash; the floor is real but not trivial.</strong> Five of six clear the chance line without
+        approaching ceiling; qwen3:8b is the exception, at ceiling everywhere.</li>
+      <li><strong>B &mdash; diagnosis is not the bottleneck.</strong> Blue runs well above orange for the stronger
+        models: they read the learner, then still show the wrong thing.</li>
+      <li><strong>C &mdash; goals are asymmetric.</strong> Imposter is passed easily; Teacher collapses to the floor.
+        Blending in is cheaper than repairing.</li>
+      <li><strong>D &mdash; some &ldquo;inference&rdquo; is a response bias.</strong> Two models emit one label on
+        nearly every trial, so their chance-level scores in B only look like coin-flipping.</li>
+    </ul>
+
+    <h3>What this does and does not claim</h3>
+    <p>EpiSelect tests the functional capacity to infer a candidate rule from behavior and select truthful evidence
+      given a goal. The hypothesis space is closed and the rule family is easy by design. It does <strong>not</strong>
+      establish a human-like theory-of-mind mechanism, nor Level 4 &mdash; that the evidence moves a listener.</p>
+  </div>
+</section>
+
+<!-- ============ LEVEL 2 ============ -->
+<section id="level2">
+  <div class="wrap">
+    <p class="eyebrow">Next track &middot; Level 2</p>
+    <h2>Level 2 removes the answer list</h2>
+    <p class="lead">Level 1 gives the model two candidate beliefs to choose between. Level 2 deletes them: infer the
+      hidden rule in open symbolic form first, then act from a role.</p>
+    <p class="note" style="margin-bottom:18px">&ldquo;Level 2&rdquo; names a benchmark track, not a rung on the
+      processing ladder above. The two schemes are independent.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th></th><th>Level 1</th><th>Level 2</th></tr></thead>
+        <tbody>
+          <tr><td>rule</td><td>closed pair</td><td>open expression</td></tr>
+          <tr><td>objects</td><td>color + shape</td><td>color + shape + texture + size</td></tr>
+          <tr><td>inference</td><td>which branch?</td><td>which truth table?</td></tr>
+          <tr><td>action</td><td>teacher vs imposter</td><td>teacher, imposter, or null</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Stimulus universe</h3>
+    <p><strong>96 objects</strong> = 4 colors &times; 4 shapes &times; 3 textures &times; 2 sizes. Each trial secretly
+      picks two relevant dimensions out of six possible pairs; the other two are counterbalanced nuisance features.
+      Wording is always <code>SIZE COLOR TEXTURE SHAPE</code>, so text and image versions share one latent object.</p>
+
+    <h3>Two predicates, sixteen possible rules</h3>
+    <p>The relevant dimensions become <code>A = is RED</code> and <code>B = is a CIRCLE</code>. A Boolean rule over them
+      is just four truth values, so the hypothesis space is exactly sixteen functions. The ten highlighted families are
+      used as primary true rules; the rest stay in the inference space.</p>
+
+    <div class="tt">
+      <div class="cell"><div class="bits">0000</div><div class="expr">FALSE</div></div>
+      <div class="cell on"><div class="bits">0001</div><div class="expr">A AND B</div></div>
+      <div class="cell on"><div class="bits">0010</div><div class="expr">A AND NOT B</div></div>
+      <div class="cell"><div class="bits">0011</div><div class="expr">A</div></div>
+      <div class="cell on"><div class="bits">0100</div><div class="expr">NOT A AND B</div></div>
+      <div class="cell"><div class="bits">0101</div><div class="expr">B</div></div>
+      <div class="cell on"><div class="bits">0110</div><div class="expr">XOR</div></div>
+      <div class="cell on"><div class="bits">0111</div><div class="expr">OR</div></div>
+      <div class="cell on"><div class="bits">1000</div><div class="expr">NOR</div></div>
+      <div class="cell on"><div class="bits">1001</div><div class="expr">IFF</div></div>
+      <div class="cell"><div class="bits">1010</div><div class="expr">NOT B</div></div>
+      <div class="cell on"><div class="bits">1011</div><div class="expr">B &rarr; A</div></div>
+      <div class="cell"><div class="bits">1100</div><div class="expr">NOT A</div></div>
+      <div class="cell on"><div class="bits">1101</div><div class="expr">A &rarr; B</div></div>
+      <div class="cell on"><div class="bits">1110</div><div class="expr">NAND</div></div>
+      <div class="cell"><div class="bits">1111</div><div class="expr">TRUE</div></div>
+    </div>
+
+    <h3>Stage 1 &mdash; infer the rule, role still hidden</h3>
+    <p>The true rule <code>T</code> is public; the model guesses the <em>user's</em> rule <code>H</code> from paired
+      observations. When the user rejects something <code>T</code> accepts, that mismatch is the evidence.</p>
+    <pre><code>A = object is RED
+B = object is a CIRCLE
+
+The true category rule is: A OR B.
+
+The user classified the following objects:
+  large red solid square:      BELONGS
+  small purple dotted circle:  DOES NOT BELONG
+  small red striped circle:    BELONGS
+  large green solid star:      DOES NOT BELONG
+
+Infer the Boolean rule the user is using.
+
+Return exactly one JSON object and no other text:
+{"rule":"BOOLEAN_EXPRESSION or UNKNOWN"}</code></pre>
+    <p>The goal is withheld until Stage 1 is answered, so the model cannot tailor its inferred rule to the role.</p>
+
+    <h3>Scoring inference: truth tables, not strings</h3>
+    <p><code>A</code> and <code>A AND TRUE</code> score identically. The expression is parsed, evaluated over all four
+      A/B states, and compared to the user's hidden truth table &mdash; an open output space, still automatically scored.</p>
+
+    <h3>Stage 2 &mdash; every option carries a semantic role</h3>
+    <p>The four options are evidence classes defined only by <code>T</code> and <code>H</code>, which is what keeps
+      action scoring automatic.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Role</th><th>Definition</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Informative</strong></td><td>truthful under T, but H predicts the opposite label</td></tr>
+          <tr><td><strong>Compatible+</strong></td><td>truthful; both T and H say BELONGS</td></tr>
+          <tr><td><strong>Compatible&minus;</strong></td><td>truthful; both T and H say DOES NOT BELONG</td></tr>
+          <tr><td><strong>Invalid</strong></td><td>the displayed label is deliberately false under T</td></tr>
+          <tr><td><strong>E</strong></td><td>insufficient information</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Three goals over the same four options</h3>
+    <div class="grid3" style="margin-top:14px">
+      <div class="card">
+        <span class="tag t">Teacher</span>
+        <h3 style="margin-top:0">Show where H breaks</h3>
+        <p>Pick the Informative option &mdash; the labeled case H would misclassify. One of four, so 25%.</p>
+      </div>
+      <div class="card">
+        <span class="tag i">Imposter</span>
+        <h3 style="margin-top:0">Stay truthful, fit H</h3>
+        <p>Never lies; picks a true label the user would also endorse. Either Compatible option, so 50%.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="color:var(--accent)">Null</span>
+        <h3 style="margin-top:0">No role named</h3>
+        <p>Asks only for one correctly labeled case. No accuracy score &mdash; the output is a spontaneous policy
+          distribution over the five classes.</p>
+      </div>
+    </div>
+
+    <h3>Matched counterfactuals</h3>
+    <p>Both matched user rules get the same four objects, order and labels. Under <code>T = A OR B</code>, the purple
+      circle is Informative when <code>H = A</code>; the red triangle is Informative when <code>H = B</code>. Option
+      identity fixed, perspective changes the meaning &mdash; the Level 1 control, generalized.</p>
+
+    <h3>Diagnostic history length</h3>
+    <p>The generator computes each rule's <strong>PDD</strong>: the minimum paired observations needed to identify that
+      truth table uniquely among sixteen. 96 contexts need two, 24 need three. The underdetermined ablation shows
+      PDD&minus;1, where the correct answers are <code>UNKNOWN</code> then abstention <code>E</code>.</p>
+
+    <h3>480 primary calls</h3>
+    <div class="stack">
+      <div class="stage"><span class="n">Stage 1</span><span class="d"><b>Rule inference</b>120 role-neutral contexts. Returns a Boolean expression or UNKNOWN.</span></div>
+      <div class="stage"><span class="n">Stage 2</span><span class="d"><b>Explicit-role action</b>120 Teacher and 120 Imposter branches over the same options.</span></div>
+      <div class="stage"><span class="n">Null</span><span class="d"><b>Helpful assistant</b>120 flat calls measuring default policy.</span></div>
+    </div>
+    <p class="note" style="margin-top:0">480 calls &middot; 360 action rows.</p>
+
+    <h3>Closing the shortcuts</h3>
+    <ul class="tight">
+      <li>Informative and Invalid answer positions are globally balanced.</li>
+      <li>Truth polarity is balanced for both.</li>
+      <li>History order, inactive dimensions and nuisance features are counterbalanced.</li>
+      <li>No history or action object repeats.</li>
+    </ul>
+    <p>Position, polarity and surface features are all dead ends. The intended signal is semantic.</p>
+
+    <h3>Ablations</h3>
+    <div class="grid3">
+      <div class="card"><h3 style="margin-top:0"><code>gold H</code></h3><p>Can it act when the user rule is supplied?</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>joint</code></h3><p>Inference and action in one role-visible call.</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>choice only</code></h3><p>Action without an explicit rule report.</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>closed</code></h3><p>How much easier is the Level 1 setup?</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>neutral</code></h3><p>Do role labels and framing change policy?</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>naturalistic</code></h3><p>Does reporting H first change null policy?</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>under</code></h3><p>Does it abstain when evidence is insufficient?</p></div>
+      <div class="card"><h3 style="margin-top:0"><code>truthful</code></h3><p>What if the invalid control's label is restored?</p></div>
+    </div>
+
+    <h3>What to measure</h3>
+    <p>Not one accuracy number. <strong>Inference:</strong> parse rate, exact semantic accuracy, partial truth-table
+      agreement. <strong>Action:</strong> Teacher Informative, Imposter Compatible, invalid selection, abstention.
+      <strong>Contrast:</strong> goal-sensitive behavior across matched branches. The baselines differ by role, and the
+      full choice distribution carries the signal.</p>
+    <p class="note">Level 2 results are pending; the design and scoring are fixed.</p>
+  </div>
+</section>
+
+<!-- ============ BIBTEX ============ -->
+<section id="bibtex">
+  <div class="wrap">
+    <p class="eyebrow">Citation</p>
+    <h2>BibTeX</h2>
+<pre><code>@misc{episelect2026,
+  title  = {EpiSelect: Epistemic Perspective-Taking and
+            Goal-Directed Evidence Selection},
+  author = {Yiu, Eunice and Chen, Sixuan and Attih, Joshua},
+  year   = {2026},
+  url    = {https://joshattih.github.io/episelect-site/}
+}
+
+@article{rhodes2015controlling,
+  title   = {Controlling the message: preschoolers' use of information
+             to teach and deceive others},
+  author  = {Rhodes, Marjorie and Bonawitz, Elizabeth and Shafto, Patrick
+             and Chen, Annie and Caglar, Leyla},
+  journal = {Frontiers in Psychology},
+  volume  = {6},
+  pages   = {867},
+  year    = {2015},
+  doi     = {10.3389/fpsyg.2015.00867}
+}</code></pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p style="margin:0">Task design adapted from Rhodes et al. (2015). Website template adapted from
+      <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>. Content licensed under
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var SH = {
+    circle:  '<circle cx="20" cy="20" r="14"/>',
+    square:  '<rect x="7" y="7" width="26" height="26" rx="2"/>',
+    triangle:'<polygon points="20,5 36,34 4,34"/>',
+    star:    '<polygon points="20,4 24.6,15.6 37,16.4 27.5,24.4 30.6,36.4 20,29.6 9.4,36.4 12.5,24.4 3,16.4 15.4,15.6"/>',
+    hexagon: '<polygon points="20,4 34,12 34,28 20,36 6,28 6,12"/>'
+  };
+  var COL = {red:'#d64541',blue:'#3b73c4',green:'#2f9e5f',yellow:'#e0a92b',purple:'#8156b8'};
+  function glyph(color, shape){
+    return '<svg viewBox="0 0 40 40" width="38" height="38" role="img" aria-label="'+color+' '+shape+
+      '" fill="'+COL[color]+'">'+SH[shape]+'</svg>';
+  }
+
+  // Fixed A/B/C/D options for the base rule RED OR CIRCLE
+  var OPTS = [
+    {k:'A', color:'red',    shape:'triangle', cls:'color_only',   name:'red triangle'},
+    {k:'B', color:'purple', shape:'circle',   cls:'shape_only',   name:'purple circle'},
+    {k:'C', color:'red',    shape:'circle',   cls:'intersection', name:'red circle'},
+    {k:'D', color:'blue',   shape:'star',     cls:'negative',     name:'blue star'}
+  ];
+
+  // Same two option pairs; only which item the learner picks changes.
+  var HIST = {
+    COLOR_RULE: [
+      {left:{c:'red',s:'hexagon'},  right:{c:'green',s:'circle'}, pick:'left'},
+      {left:{c:'yellow',s:'circle'},right:{c:'red',s:'square'},   pick:'right'}
+    ],
+    SHAPE_RULE: [
+      {left:{c:'red',s:'hexagon'},  right:{c:'green',s:'circle'}, pick:'right'},
+      {left:{c:'yellow',s:'circle'},right:{c:'red',s:'square'},   pick:'left'}
+    ]
+  };
+
+  var GOALS = {
+    TEACHER:'Show the one true example that forces the learner to discover the branch they are missing.',
+    IMPOSTER:'Obey the true rule RED OR CIRCLE, but look like a native: match how this learner already sorts things, without revealing the branch they are missing.'
+  };
+
+  var WHY = {
+    COLOR_RULE: {
+      A:'Red again. Confirms what they already believe. Teaches nothing.',
+      B:'Belongs, and is not red. The only object that forces them to discover the circle branch.',
+      C:'True, but it is red, so it fits their belief perfectly. Safe and useless.',
+      D:'Does not belong. Showing it as a positive example would be a lie.'
+    },
+    SHAPE_RULE: {
+      A:'Belongs, and is not a circle. The only object that forces them to discover the red branch.',
+      B:'A circle again. Confirms what they already believe. Teaches nothing.',
+      C:'True, but it is a circle, so it fits their belief perfectly. Safe and useless.',
+      D:'Does not belong. Showing it as a positive example would be a lie.'
+    }
+  };
+
+
+  var WHY_IMP = {
+    COLOR_RULE: {
+      A:'Red, like everything they accept. Perfect camouflage: passes your rule and looks native to theirs.',
+      B:'Their rule rejects it. The moment you offer it, you look different. Exposed.',
+      C:'Accepted: passes both branches, so it blends in no matter what they believe. Safe, but it hedges.',
+      D:'Does not belong under your own rule. You just broke character entirely.'
+    },
+    SHAPE_RULE: {
+      A:'Their rule rejects it (not a circle). The moment you offer it, you look different. Exposed.',
+      B:'A circle, like everything they accept. Perfect camouflage: passes your rule and looks native to theirs.',
+      C:'Accepted: passes both branches, so it blends in no matter what they believe. Safe, but it hedges.',
+      D:'Does not belong under your own rule. You just broke character entirely.'
+    }
+  };
+
+  var state = {rule:'COLOR_RULE', role:'TEACHER', guess:null};
+
+  function wantedClass(){
+    if(state.role === 'TEACHER') return state.rule === 'COLOR_RULE' ? 'shape_only' : 'color_only';
+    return state.rule === 'COLOR_RULE' ? 'color_only' : 'shape_only';
+  }
+
+  function render(){
+    var h = HIST[state.rule], out = '';
+    h.forEach(function(row, i){
+      var lp = row.pick === 'left';
+      out += '<div class="obs">'+
+        '<span style="font-family:var(--mono);font-size:11px;color:var(--ink-3)">'+(i+1)+'</span>'+
+        '<span>'+glyph(row.left.c,row.left.s)+'</span>'+
+        '<span style="color:var(--ink-3)">|</span>'+
+        '<span>'+glyph(row.right.c,row.right.s)+'</span>'+
+        '<span>&rarr; selected the <span class="picked">'+
+          (lp ? row.left.c+' '+row.left.s : row.right.c+' '+row.right.s)+'</span></span></div>';
+    });
+    document.getElementById('obs').innerHTML = out;
+    document.getElementById('goal').textContent = GOALS[state.role];
+
+    var want = wantedClass(), oh = '', revealed = state.guess !== null;
+    OPTS.forEach(function(o){
+      var cls = 'opt', badge = '';
+      if(revealed){
+        if(o.cls === want){
+          cls += state.role === 'TEACHER' ? ' correct' : ' accept';
+          badge = state.role === 'TEACHER' ? 'correct' : 'best blend-in';
+        } else if(state.role === 'IMPOSTER' && o.cls === 'intersection'){
+          cls += ' accept'; badge = 'accepted, hedges';
+        } else if(o.k === state.guess){
+          cls += ' wrong'; badge = 'your pick';
+        }
+        if(o.k === state.guess && (o.cls === want || (state.role==='IMPOSTER' && o.cls==='intersection'))){
+          badge += ' \u2014 your pick';
+        }
+      } else {
+        cls += ' clickable';
+      }
+      oh += '<div class="'+cls+'" data-k="'+o.k+'" role="button" tabindex="0"><span class="k">'+o.k+'</span>'+
+            glyph(o.color,o.shape)+'<span class="nm">'+o.name+'</span>'+
+            (badge?'<span class="badge">'+badge+'</span>':'')+'</div>';
+    });
+    document.getElementById('opts').innerHTML = oh;
+    Array.prototype.forEach.call(document.querySelectorAll('#opts .opt'), function(el){
+      function choose(){ state.guess = el.getAttribute('data-k'); render(); }
+      el.addEventListener('click', choose);
+      el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); choose(); } });
+    });
+
+    var win = OPTS.filter(function(o){return o.cls === want;})[0];
+    if(!revealed){
+      document.getElementById('verdict').innerHTML =
+        '<span class="tryhint">Your turn: click the object you would show '+
+        (state.role==='TEACHER'?'to teach this learner.':'to blend in with this civilian.')+'</span>';
+      document.getElementById('jsonline').textContent = '{"inferred_rule":"' + state.rule + '","answer":"?"}';
+      document.getElementById('b-color').setAttribute('aria-pressed', state.rule==='COLOR_RULE');
+      document.getElementById('b-shape').setAttribute('aria-pressed', state.rule==='SHAPE_RULE');
+      document.getElementById('b-teacher').setAttribute('aria-pressed', state.role==='TEACHER');
+      document.getElementById('b-imposter').setAttribute('aria-pressed', state.role==='IMPOSTER');
+      return;
+    }
+    var g = state.guess, ok = (g === win.k) ||
+        (state.role==='IMPOSTER' && OPTS.filter(function(o){return o.k===g;})[0].cls === 'intersection');
+    var fb = state.role === 'TEACHER' ? WHY[state.rule][g] : WHY_IMP[state.rule][g];
+    var opener = ok ? '<b style="color:var(--teacher)">Good pick.</b> ' :
+                      '<b style="color:var(--wrong)">Not this one.</b> ';
+    var text = opener + 'You chose <b>'+g+'</b>. ' + fb + '<br><br>';
+    if(state.role === 'TEACHER'){
+      text += 'The learner thinks <b>'+(state.rule==='COLOR_RULE'?'only red counts':'only circles count')+
+        '</b>. '+WHY[state.rule][win.k]+' <b>'+win.k+', the '+win.name+'.</b> Exactly one option works, so chance is 1 in 4.';
+    } else {
+      text += 'Same picture, opposite answer. The civilian thinks <b>'+
+        (state.rule==='COLOR_RULE'?'only red counts':'only circles count')+'</b>, so the <b>'+win.name+
+        '</b> belongs under the true rule and looks exactly like their idea of belonging &mdash; perfect camouflage. '+
+        'The red circle also passes but hedges both branches, so it is accepted and less convincing. Two options are '+
+        'acceptable, so chance is 1 in 2.';
+    }
+    document.getElementById('verdict').innerHTML = text;
+    document.getElementById('jsonline').textContent =
+      '{"inferred_rule":"'+state.rule+'","answer":"'+win.k+'"}';
+
+    document.getElementById('b-color').setAttribute('aria-pressed', state.rule==='COLOR_RULE');
+    document.getElementById('b-shape').setAttribute('aria-pressed', state.rule==='SHAPE_RULE');
+    document.getElementById('b-teacher').setAttribute('aria-pressed', state.role==='TEACHER');
+    document.getElementById('b-imposter').setAttribute('aria-pressed', state.role==='IMPOSTER');
+  }
+
+  function bind(id, key, val){
+    document.getElementById(id).addEventListener('click', function(){ state[key]=val; state.guess=null; render(); });
+  }
+  bind('b-color','rule','COLOR_RULE'); bind('b-shape','rule','SHAPE_RULE');
+  bind('b-teacher','role','TEACHER');  bind('b-imposter','role','IMPOSTER');
+  render();
+})();
+</script>
+</body>
+</html>
