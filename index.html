@@ -242,6 +242,7 @@ footer a{color:var(--ink-2)}
       <a class="btn ghost" href="#levels">Levels</a>
       <a class="btn ghost" href="#scoring">Scoring</a>
       <a class="btn ghost" href="#results">Results</a>
+      <a class="btn ghost" href="#vision">Vision</a>
       <a class="btn ghost" href="#level2">Level 2</a>
       <a class="btn ghost" href="https://github.com/SixuanChen/EpiSelect">Code</a>
       <a class="btn ghost" href="#bibtex">BibTeX</a>
@@ -333,8 +334,9 @@ footer a{color:var(--ink-2)}
       </div>
     </div>
 
-    <p class="note"><strong>Shapes are drawn here for readability only.</strong> Every trial reported below is
-      text-only. Matched rendered-vision stimuli, generated from the same symbolic specification, are a planned track.</p>
+    <p class="note"><strong>Shapes are drawn here for readability only.</strong> The 19-model comparison below is
+      text-only. Matched rendered-vision stimuli, generated from the same symbolic specification, now run as a
+      second track &mdash; see <a href="#vision">the vision arm</a>.</p>
 
     <h3>The text version, verbatim</h3>
     <pre><code>This is a category-learning task.
@@ -569,6 +571,61 @@ python score_predictions.py \
     <p>EpiSelect tests the functional capacity to infer a candidate rule from behavior and select truthful evidence
       given a goal. The hypothesis space is closed and the rule family is easy by design. It does <strong>not</strong>
       establish a human-like theory-of-mind mechanism, nor Level 4 &mdash; that the evidence moves a listener.</p>
+  </div>
+</section>
+
+<!-- ============ VISION ============ -->
+<section id="vision">
+  <div class="wrap">
+    <p class="eyebrow">Results &middot; Level 1, rendered-vision stimuli</p>
+    <h2>Nine VLMs on the rendered stimuli</h2>
+    <p class="lead">The same 120 trials, re-rendered as images. Objects that the text arm names in words
+      (<code>RED CIRCLE</code>) are drawn instead, from the identical symbolic specification, and the model must both
+      see the scene and reason about the learner.</p>
+    <p>Open-weight VLMs: Ollama, temperature 0, 3 repetitions (error bars are SD). Claude, Gemini and GPT models:
+      one stateless API run each. Same 120 trials, same gold key, same scorer as the text arm.</p>
+
+    <div class="carousel" id="carvis">
+      <button class="car-btn car-prev" aria-label="Previous panel">&#8249;</button>
+      <div class="car-track" id="carvis-track">
+        <div class="car-slide"><img src="static/images/vision_panelA.svg" alt="Panel A: joint success on rendered-vision stimuli for nine VLMs, colored by company"></div>
+        <div class="car-slide"><img src="static/images/vision_panelB.svg" alt="Panel B: rule inference and action selection scored separately on rendered-vision stimuli"></div>
+        <div class="car-slide"><img src="static/images/vision_panelC.svg" alt="Panel C: teacher versus imposter joint success on rendered-vision stimuli"></div>
+        <div class="car-slide"><img src="static/images/vision_panelD.svg" alt="Panel D: quartet consistency across matched trials on rendered-vision stimuli"></div>
+      </div>
+      <button class="car-btn car-next" aria-label="Next panel">&#8250;</button>
+      <div class="car-dots" id="carvis-dots" role="tablist"></div>
+      <p class="car-cap" id="carvis-cap"></p>
+    </div>
+    <p class="note">The heavy vertical rule separates the two arms: three open-weight VLMs on the left
+      (gemma3:12b, llama3.2-vision:11b, qwen2.5vl:7b), six frontier VLMs on the right. Dotted rules mark a change of
+      company. Dashed horizontals are chance from the gold key. Error bars show SD across the three open-weight
+      repetitions; frontier models ran a single pass, so those bars carry no variance estimate.</p>
+
+    <h3>Reading the panels</h3>
+    <ul class="tight">
+      <li><strong>A &mdash; the vision arm splits, it does not simply drop.</strong> Claude Fable 5 and Gemini Pro
+        are at 1.00 and GPT-5.2 at 0.96, while every open-weight VLM sits at or barely above the 0.19 chance line
+        (0.17, 0.17, 0.26). Claude Haiku 4.5 (0.41), Gemini 2.5 Flash-Lite (0.44) and GPT-4o Mini (0.26) fall in
+        between.</li>
+      <li><strong>B &mdash; diagnosis is still not the bottleneck.</strong> Gemini 2.5 Flash-Lite infers the rule at
+        0.84 but only acts correctly at 0.49: it reads the learner and then shows the wrong object. Open-weight rule
+        inference (0.41&ndash;0.51) is indistinguishable from the 0.50 chance line, so for those models the
+        perception step is genuinely failing.</li>
+      <li><strong>C &mdash; the role asymmetry survives the switch to images, and sharpens.</strong> Gemini 2.5
+        Flash-Lite and GPT-4o Mini score 0.00 as Teacher while clearing 0.88 and 0.52 as Imposter. Blending in
+        tolerates a vague percept; repairing a specific false belief does not.</li>
+      <li><strong>D &mdash; consistency remains the frontier separator.</strong> Quartet consistency is 0.00 for all
+        three open-weight VLMs and for GPT-4o Mini. Flash-Lite holds rules together across a quartet (0.56) but never
+        the actions (0.00). Only Fable 5, Gemini Pro (1.00) and GPT-5.2 (0.84) answer all four matched cells
+        coherently.</li>
+    </ul>
+
+    <h3>One caveat on the comparison</h3>
+    <p>The two arms of this figure are <strong>not prompt-matched</strong>. Frontier models were asked to emit an
+      inline perception listing before answering; open-weight models answered directly. A gap across the heavy rule
+      therefore confounds model capability with prompt format, and should not be read as a clean open-vs-frontier
+      contrast. Comparisons <em>within</em> an arm are matched and safe.</p>
   </div>
 </section>
 
@@ -998,29 +1055,36 @@ Return exactly one JSON object and no other text:
 </script>
 <script>
 (function(){
-  var track = document.getElementById('car19-track');
-  if(!track) return;
-  var caps = ['A - Joint success (100 main trials)','B - The two capacities, scored separately',
-              'C - Role asymmetry (teacher vs imposter)','D - Quartet consistency across matched trials'];
-  var dots = document.getElementById('car19-dots'), cap = document.getElementById('car19-cap');
-  var n = track.children.length;
-  for(var i=0;i<n;i++){
-    var b = document.createElement('button');
-    b.setAttribute('aria-label','Go to panel '+(i+1));
-    (function(k){ b.addEventListener('click', function(){ go(k); }); })(i);
-    dots.appendChild(b);
+  function carousel(id, caps){
+    var track = document.getElementById(id+'-track');
+    if(!track) return;
+    var dots = document.getElementById(id+'-dots'), cap = document.getElementById(id+'-cap');
+    var n = track.children.length;
+    for(var i=0;i<n;i++){
+      var b = document.createElement('button');
+      b.setAttribute('aria-label','Go to panel '+(i+1));
+      (function(k){ b.addEventListener('click', function(){ go(k); }); })(i);
+      dots.appendChild(b);
+    }
+    function idx(){ return Math.round(track.scrollLeft / track.clientWidth); }
+    function paint(){
+      var k = Math.max(0, Math.min(n-1, idx()));
+      for(var i=0;i<n;i++) dots.children[i].setAttribute('aria-current', i===k ? 'true' : 'false');
+      cap.textContent = caps[k];
+    }
+    function go(k){ track.scrollTo({left: k * track.clientWidth, behavior:'smooth'}); }
+    document.querySelector('#'+id+' .car-prev').addEventListener('click', function(){ go(idx()-1); });
+    document.querySelector('#'+id+' .car-next').addEventListener('click', function(){ go(idx()+1); });
+    track.addEventListener('scroll', function(){ requestAnimationFrame(paint); });
+    paint();
   }
-  function idx(){ return Math.round(track.scrollLeft / track.clientWidth); }
-  function paint(){
-    var k = Math.max(0, Math.min(n-1, idx()));
-    for(var i=0;i<n;i++) dots.children[i].setAttribute('aria-current', i===k ? 'true' : 'false');
-    cap.textContent = caps[k];
-  }
-  function go(k){ track.scrollTo({left: k * track.clientWidth, behavior:'smooth'}); }
-  document.querySelector('#car19 .car-prev').addEventListener('click', function(){ go(idx()-1); });
-  document.querySelector('#car19 .car-next').addEventListener('click', function(){ go(idx()+1); });
-  track.addEventListener('scroll', function(){ requestAnimationFrame(paint); });
-  paint();
+
+  carousel('car19', ['A - Joint success (100 main trials)','B - The two capacities, scored separately',
+                     'C - Role asymmetry (teacher vs imposter)','D - Quartet consistency across matched trials']);
+  carousel('carvis', ['A - Joint success on rendered stimuli (100 main trials)',
+                      'B - The two capacities, scored separately',
+                      'C - Role asymmetry (teacher vs imposter)',
+                      'D - Quartet consistency across matched trials']);
 })();
 </script>
 </body>
