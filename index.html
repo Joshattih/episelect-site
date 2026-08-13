@@ -242,7 +242,6 @@ footer a{color:var(--ink-2)}
       <a class="btn ghost" href="#levels">Levels</a>
       <a class="btn ghost" href="#scoring">Scoring</a>
       <a class="btn ghost" href="#results">Results</a>
-      <a class="btn ghost" href="#vision">Vision</a>
       <a class="btn ghost" href="#level2">Level 2</a>
       <a class="btn ghost" href="https://github.com/SixuanChen/EpiSelect">Code</a>
       <a class="btn ghost" href="#bibtex">BibTeX</a>
@@ -534,8 +533,10 @@ python score_predictions.py \
 <!-- ============ RESULTS ============ -->
 <section id="results">
   <div class="wrap">
-    <p class="eyebrow">Results &middot; Level 1, text stimuli</p>
-    <h2>Nineteen models &mdash; open-source and frontier</h2>
+    <p class="eyebrow">Results &middot; Level 1</p>
+    <h2>Nineteen models on text, nine on rendered images</h2>
+
+    <h3>Text stimuli &mdash; nineteen models</h3>
     <p>Open-source models: Ollama, temperature 0, 3 repetitions (error bars are SD). Claude, Gemini and GPT
       models: one stateless API run each at temperature 0 where supported. Same 120 trials, same scorer throughout.</p>
 
@@ -554,7 +555,7 @@ python score_predictions.py \
     <p class="note">Open-source models: 3 repetitions; Claude / Gemini / GPT models: one run each. Bars show the mean;
       error bars show SD where repeated runs exist. Panel colors indicate model company.</p>
 
-    <h3>Reading the panels</h3>
+    <h3>Reading the text panels</h3>
     <ul class="tight">
       <li><strong>A &mdash; the floor is real but not trivial.</strong> Five of six clear the chance line without
         approaching ceiling; qwen3:8b is the exception, at ceiling everywhere.</li>
@@ -567,23 +568,11 @@ python score_predictions.py \
         scores look respectable, while frontier models hold 1.00.</li>
     </ul>
 
-    <h3>What this does and does not claim</h3>
-    <p>EpiSelect tests the functional capacity to infer a candidate rule from behavior and select truthful evidence
-      given a goal. The hypothesis space is closed and the rule family is easy by design. It does <strong>not</strong>
-      establish a human-like theory-of-mind mechanism, nor Level 4 &mdash; that the evidence moves a listener.</p>
-  </div>
-</section>
-
-<!-- ============ VISION ============ -->
-<section id="vision">
-  <div class="wrap">
-    <p class="eyebrow">Results &middot; Level 1, rendered-vision stimuli</p>
-    <h2>Nine VLMs on the rendered stimuli</h2>
-    <p class="lead">The same 120 trials, re-rendered as images. Objects that the text arm names in words
-      (<code>RED CIRCLE</code>) are drawn instead, from the identical symbolic specification, and the model must both
-      see the scene and reason about the learner.</p>
-    <p>Open-weight VLMs: Ollama, temperature 0, 3 repetitions (error bars are SD). Claude, Gemini and GPT models:
-      one stateless API run each. Same 120 trials, same gold key, same scorer as the text arm.</p>
+    <h3 id="vision">Rendered-vision stimuli &mdash; nine VLMs</h3>
+    <p>The same 120 trials, re-rendered as images. Objects that the text arm names in words (<code>RED CIRCLE</code>)
+      are drawn instead, from the identical symbolic specification, so the model must both see the scene and reason
+      about the learner. Open-weight VLMs: Ollama, temperature 0, 3 repetitions. Claude, Gemini and GPT models: one
+      stateless API run each. Same gold key, same scorer as above.</p>
 
     <div class="carousel" id="carvis">
       <button class="car-btn car-prev" aria-label="Previous panel">&#8249;</button>
@@ -602,7 +591,7 @@ python score_predictions.py \
       company. Dashed horizontals are chance from the gold key. Error bars show SD across the three open-weight
       repetitions; frontier models ran a single pass, so those bars carry no variance estimate.</p>
 
-    <h3>Reading the panels</h3>
+    <h3>Reading the vision panels</h3>
     <ul class="tight">
       <li><strong>A &mdash; the vision arm splits, it does not simply drop.</strong> Claude Fable 5 and Gemini Pro
         are at 1.00 and GPT-5.2 at 0.96, while every open-weight VLM sits at or barely above the 0.19 chance line
@@ -620,12 +609,15 @@ python score_predictions.py \
         the actions (0.00). Only Fable 5, Gemini Pro (1.00) and GPT-5.2 (0.84) answer all four matched cells
         coherently.</li>
     </ul>
+    <p class="note">The two arms of the vision figure are <strong>not prompt-matched</strong>: frontier models were
+      asked to emit an inline perception listing before answering, open-weight models answered directly. A gap across
+      the heavy rule therefore confounds model capability with prompt format. Comparisons <em>within</em> an arm are
+      matched.</p>
 
-    <h3>One caveat on the comparison</h3>
-    <p>The two arms of this figure are <strong>not prompt-matched</strong>. Frontier models were asked to emit an
-      inline perception listing before answering; open-weight models answered directly. A gap across the heavy rule
-      therefore confounds model capability with prompt format, and should not be read as a clean open-vs-frontier
-      contrast. Comparisons <em>within</em> an arm are matched and safe.</p>
+    <h3>What this does and does not claim</h3>
+    <p>EpiSelect tests the functional capacity to infer a candidate rule from behavior and select truthful evidence
+      given a goal. The hypothesis space is closed and the rule family is easy by design. It does <strong>not</strong>
+      establish a human-like theory-of-mind mechanism, nor Level 4 &mdash; that the evidence moves a listener.</p>
   </div>
 </section>
 
