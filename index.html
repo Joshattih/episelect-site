@@ -56,8 +56,11 @@ pre code{background:none;padding:0;font-size:inherit}
 .tryhint{font-size:13.5px;color:var(--accent);font-weight:650;margin:0 0 10px}
 
 
+
+#drift{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#drift{display:none}}
 /* ambient figure: a person whose choices are being read */
-.walker{position:absolute;bottom:8px;left:-140px;width:120px;opacity:.10;pointer-events:none;
+.walker{position:absolute;bottom:8px;left:-160px;width:150px;opacity:.22;pointer-events:none;
   animation:stroll 70s linear infinite}
 .walker .bob{animation:bob 2.6s ease-in-out infinite}
 .walker .th-a{animation:think 8s ease-in-out infinite}
@@ -195,6 +198,7 @@ footer a{color:var(--ink-2)}
 
 <!-- ============ HERO ============ -->
 <header class="hero">
+<canvas id="drift" aria-hidden="true"></canvas>
 <div class="walker" aria-hidden="true">
   <svg viewBox="0 0 120 120" width="120" height="120" fill="none" stroke="#11151b" stroke-width="3" stroke-linecap="round">
     <g class="bob">
@@ -880,6 +884,68 @@ Return exactly one JSON object and no other text:
   bind('b-color','rule','COLOR_RULE'); bind('b-shape','rule','SHAPE_RULE');
   bind('b-teacher','role','TEACHER');  bind('b-imposter','role','IMPOSTER');
   render();
+})();
+</script>
+<script>
+(function(){
+  var cv = document.getElementById('drift');
+  if(!cv || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cx = cv.getContext('2d');
+  var COLORS = ['#d64541','#3b73c4','#2f9e5f','#e0a92b','#8156b8'];
+  var N = 26, shapes = [];
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function resize(){
+    var r = cv.parentElement.getBoundingClientRect();
+    cv.width = r.width; cv.height = r.height;
+  }
+  function make(i){
+    return { kind: i % 5, c: COLORS[i % 5],
+      x: rnd(0, 1), y: rnd(0.05, 0.95), s: rnd(14, 34),
+      vx: rnd(0.00012, 0.00045) * (Math.random() < 0.5 ? -1 : 1),
+      vy: rnd(-0.00008, 0.00008),
+      rot: rnd(0, 6.28), vr: rnd(-0.004, 0.004), a: rnd(0.05, 0.13) };
+  }
+  for(var i=0;i<N;i++) shapes.push(make(i));
+  function poly(n, r, start){
+    cx.beginPath();
+    for(var k=0;k<n;k++){
+      var t = start + k * 6.2832 / n;
+      cx[k?'lineTo':'moveTo'](Math.cos(t)*r, Math.sin(t)*r);
+    }
+    cx.closePath();
+  }
+  function star(r){
+    cx.beginPath();
+    for(var k=0;k<10;k++){
+      var t = -1.5708 + k * 0.6283, rr = k % 2 ? r*0.45 : r;
+      cx[k?'lineTo':'moveTo'](Math.cos(t)*rr, Math.sin(t)*rr);
+    }
+    cx.closePath();
+  }
+  function draw(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    shapes.forEach(function(o){
+      o.x += o.vx; o.y += o.vy; o.rot += o.vr;
+      if(o.x < -0.06) o.x = 1.06; if(o.x > 1.06) o.x = -0.06;
+      if(o.y < 0.02 || o.y > 0.98) o.vy = -o.vy;
+      cx.save();
+      cx.translate(o.x*cv.width, o.y*cv.height);
+      cx.rotate(o.rot);
+      cx.globalAlpha = o.a;
+      cx.fillStyle = o.c;
+      if(o.kind===0){ cx.beginPath(); cx.arc(0,0,o.s*0.55,0,6.2832); cx.closePath(); }
+      else if(o.kind===1){ cx.beginPath(); cx.rect(-o.s*0.5,-o.s*0.5,o.s,o.s); cx.closePath(); }
+      else if(o.kind===2){ poly(3,o.s*0.62,-1.5708); }
+      else if(o.kind===3){ star(o.s*0.62); }
+      else { poly(6,o.s*0.58,0); }
+      cx.fill();
+      cx.restore();
+    });
+    requestAnimationFrame(draw);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(draw);
 })();
 </script>
 </body>
