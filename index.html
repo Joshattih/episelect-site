@@ -792,7 +792,7 @@ Return exactly one JSON object and no other text:
     <p class="pull">When should an AI use its model of a user, when should it question or revise that model, and how
       should that model affect what the AI communicates?</p>
 
-    <h3>Uncertainty is structural, not a mood</h3>
+    <h3>Uncertainty is structural</h3>
     <p>Every history is exactly four judgments, so prompt length is held constant. What varies is how many of the four
       abstract states those judgments cover &mdash; which fixes the <strong>version space</strong> <code>V</code>, the
       set of semantic rules still consistent with what the user has said.</p>
@@ -813,7 +813,7 @@ Return exactly one JSON object and no other text:
       only when it is uniquely determined, otherwise report <code>UNKNOWN</code> &mdash; guessing a plausible or
       simpler rule is a failure, not a near miss.</p>
 
-    <h3>Evidence is generated, not chosen from a list</h3>
+    <h3>Evidence is generated</h3>
     <p>There are no answer options left. The model emits an object and the label it intends to show:</p>
 <pre><code>{"action":"ACT",
  "object":{"size":"large","color":"red",
