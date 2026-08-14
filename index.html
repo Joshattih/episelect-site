@@ -99,20 +99,16 @@ header.hero p{margin-left:auto;margin-right:auto}
   font-weight:500;display:block;margin-bottom:6px}
 .tag.t{color:var(--teacher)} .tag.i{color:var(--imposter)}
 
-/* ---------- levels ladder ---------- */
+/* ---------- phase ladder ---------- */
 .ladder{border:1px solid var(--rule);border-radius:10px;background:var(--surface);
   box-shadow:var(--shadow);overflow:hidden}
-.lvl{display:grid;grid-template-columns:74px minmax(0,1fr) 108px;gap:16px;align-items:baseline;
+.lvl{display:grid;grid-template-columns:74px minmax(0,1fr);gap:16px;align-items:baseline;
   padding:14px 20px;border-bottom:1px solid var(--rule)}
 .lvl:last-child{border-bottom:none}
-.lvl.out{background:var(--surface-2)}
 .lvl .n{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
 .lvl .d{font-size:14.5px;color:var(--ink-2)}
 .lvl .d b{color:var(--ink);font-weight:650;display:block}
-.lvl .s{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--teacher);text-align:right}
-.lvl.out .s{color:var(--ink-3)}
-@media (max-width:620px){.lvl{grid-template-columns:1fr;gap:4px}.lvl .s{text-align:left}}
+@media (max-width:620px){.lvl{grid-template-columns:1fr;gap:4px}}
 
 /* ---------- signature: quartet explorer ---------- */
 .quartet{background:var(--surface);border:1px solid var(--rule);border-radius:12px;
@@ -376,19 +372,18 @@ current rule is missing.</code></pre>
 <section id="levels">
   <div class="wrap">
     <p class="eyebrow">What the design isolates</p>
-    <h2>Five levels of epistemic processing</h2>
-    <p>Each level presupposes the one below, so where a model breaks is the measurement. EpiSelect scores 0&ndash;3
-      automatically; Level 4 needs a downstream listener.</p>
+    <h2>Five phases of epistemic processing</h2>
+    <p>Each phase presupposes the one below, so where a model breaks is the measurement. All five are tested.</p>
 
     <div class="ladder">
-      <div class="lvl"><span class="n">Level 0</span><span class="d"><b>Truth tracking</b>Knows which examples satisfy the real rule.</span><span class="s">scored</span></div>
-      <div class="lvl"><span class="n">Level 1</span><span class="d"><b>Informativeness</b>Knows which truthful example distinguishes the real rule from an alternative.</span><span class="s">scored</span></div>
-      <div class="lvl"><span class="n">Level 2</span><span class="d"><b>Audience sensitivity</b>Chooses differently for listeners holding different hypotheses.</span><span class="s">scored</span></div>
-      <div class="lvl"><span class="n">Level 3</span><span class="d"><b>Goal flexibility</b>Same options, same listener &mdash; reverses its choice under teaching versus concealment.</span><span class="s">scored</span></div>
-      <div class="lvl out"><span class="n">Level 4</span><span class="d"><b>Effective intervention</b>The chosen evidence actually moves a listener toward the intended hypothesis.</span><span class="s">future work</span></div>
+      <div class="lvl"><span class="n">Phase 0</span><span class="d"><b>Truth tracking</b>Knows which examples satisfy the real rule.</span></div>
+      <div class="lvl"><span class="n">Phase 1</span><span class="d"><b>Informativeness</b>Knows which truthful example distinguishes the real rule from an alternative.</span></div>
+      <div class="lvl"><span class="n">Phase 2</span><span class="d"><b>Audience sensitivity</b>Chooses differently for listeners holding different hypotheses.</span></div>
+      <div class="lvl"><span class="n">Phase 3</span><span class="d"><b>Goal flexibility</b>Same options, same listener &mdash; reverses its choice under teaching versus concealment.</span></div>
+      <div class="lvl"><span class="n">Phase 4</span><span class="d"><b>Effective intervention</b>The chosen evidence actually moves a listener toward the intended hypothesis.</span></div>
     </div>
 
-    <p style="margin-top:16px">Levels 2 and 3 are why this is a matched quartet rather than a list of questions: both
+    <p style="margin-top:16px">Phases 2 and 3 are why this is a matched quartet rather than a list of questions: both
       are visible only as <em>reversals</em> with everything else held fixed.</p>
   
     <h3 style="margin-top:34px">The benchmark ladder: three levels of modeling the other person</h3>
@@ -512,7 +507,7 @@ current rule is missing.</code></pre>
     <h3>Reversal metrics</h3>
     <p>Because a quartet's cells share their options, the scorer reports whether behavior reverses when it should:
       <code>teacher_learner_rule_reversal_consistency</code>, <code>imposter_specific_rule_reversal_consistency</code>,
-      <code>specific_goal_reversal_consistency</code>, <code>quartet_joint_consistency</code> &mdash; the Level 2 and 3
+      <code>specific_goal_reversal_consistency</code>, <code>quartet_joint_consistency</code> &mdash; the Phase 2 and 3
       measures.</p>
 
     <h3>Run and score</h3>
@@ -616,7 +611,7 @@ python score_predictions.py \
     <h3>What this does and does not claim</h3>
     <p>EpiSelect tests the functional capacity to infer a candidate rule from behavior and select truthful evidence
       given a goal. The hypothesis space is closed and the rule family is easy by design. It does <strong>not</strong>
-      establish a human-like theory-of-mind mechanism, nor Level 4 &mdash; that the evidence moves a listener.</p>
+      establish a human-like theory-of-mind mechanism, nor Phase 4 &mdash; that the evidence moves a listener.</p>
   </div>
 </section>
 
@@ -627,8 +622,8 @@ python score_predictions.py \
     <h2>Level 2 removes the answer list</h2>
     <p class="lead">Level 1 gives the model two candidate beliefs to choose between. Level 2 deletes them: infer the
       hidden rule in open symbolic form first, then act from a role.</p>
-    <p class="note" style="margin-bottom:18px">&ldquo;Level 2&rdquo; names a benchmark track, not a rung on the
-      processing ladder above. The two schemes are independent.</p>
+    <p class="note" style="margin-bottom:18px">&ldquo;Level&rdquo; names task difficulty; the five <em>phases</em>
+      above name the processing ladder. The two schemes are independent.</p>
 
     <div class="tablewrap">
       <table>
